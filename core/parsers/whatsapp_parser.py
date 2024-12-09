@@ -4,10 +4,10 @@ from typing import Dict, Optional, Generator
 from django.db import transaction
 from users.models import User
 from whatsapp_messages.models import Message
+import pytz
 
 class WhatsAppMessageParser:
     def __init__(self):
-        # Regular expression for parsing WhatsApp messages
         self.message_pattern = re.compile(
             r'(\d{1,2}/\d{1,2}/\d{2}),\s(\d{1,2}:\d{2})\s-\s(\+\d+\s\d+\s\d+\s\d+):\s(.*)'
         )
@@ -18,11 +18,13 @@ class WhatsAppMessageParser:
             'audio omitted',
             'document omitted'
         ]
+        self.timezone = pytz.timezone('Africa/Lagos')
 
     def parse_timestamp(self, date_str: str, time_str: str) -> datetime:
-        """Convert date and time strings to datetime object."""
+        """Convert date and time strings to timezone-aware datetime object."""
         datetime_str = f"{date_str} {time_str}"
-        return datetime.strptime(datetime_str, "%m/%d/%y %H:%M")
+        naive_datetime = datetime.strptime(datetime_str, "%m/%d/%y %H:%M")
+        return self.timezone.localize(naive_datetime)
 
     def detect_message_type(self, content: str) -> str:
         """Detect the type of message based on content."""
