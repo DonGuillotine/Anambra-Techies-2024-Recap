@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp Analytics API
+  version: 1.0.0
+  description: API for analyzing WhatsApp group chat data
+paths:
+  /api/analytics/{id}/user_metrics/:
+    get:
+      operationId: api_analytics_user_metrics_retrieve
+      description: Get analytics metrics for a specific user
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+        description: End date (YYYY-MM-DD)
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          pattern: ^\+\d{1,15}$
+        description: User phone number
+        required: true
+      - in: query
+        name: start_date
+        schema:
+          type: string
+        description: Start date (YYYY-MM-DD)
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMetrics'
+          description: ''
+        '400':
+          description: Invalid date format
+        '404':
+          description: User not found
+  /api/analytics/{id}/user_trends/:
+    get:
+      operationId: api_analytics_user_trends_list
+      description: Get trend analysis for a specific user
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+          default: 30
+        description: Number of days to analyze (1-365)
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: string
+          pattern: ^\+\d{1,15}$
+        description: User phone number
+        required: true
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserTrends'
+          description: ''
+        '400':
+          description: Invalid days parameter
+        '404':
+          description: User not found
+  /api/analytics/activity_patterns/:
+    get:
+      operationId: api_analytics_activity_patterns_retrieve
+      description: Get activity patterns analysis
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+        description: End date (YYYY-MM-DD)
+      - in: query
+        name: start_date
+        schema:
+          type: string
+        description: Start date (YYYY-MM-DD)
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPattern'
+          description: ''
+        '400':
+          description: Invalid date format
+  /api/analytics/group_metrics/:
+    get:
+      operationId: api_analytics_group_metrics_retrieve
+      description: Get group-wide analytics metrics
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+          format: date
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        description: End date (YYYY-MM-DD)
+      - in: query
+        name: start_date
+        schema:
+          type: string
+          format: date
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        description: Start date (YYYY-MM-DD)
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMetrics'
+          description: ''
+        '400':
+          description: Invalid date format
+  /api/analytics/update_group_stats/:
+    post:
+      operationId: api_analytics_update_group_stats_create
+      description: Manually trigger update of group statistics (staff only)
+      tags:
+      - analytics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserMetricsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserMetricsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserMetricsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      responses:
+        '200':
+          description: Statistics updated successfully
+        '403':
+          description: Permission denied
+        '500':
+          description: Internal server error
+  /api/auth/request-otp/:
+    post:
+      operationId: api_auth_request_otp_create
+      description: Request an OTP for phone number authentication
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneNumberAuthRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PhoneNumberAuthRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PhoneNumberAuthRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: OTP sent successfully
+        '400':
+          description: Invalid phone number format
+  /api/auth/verify-otp/:
+    post:
+      operationId: api_auth_verify_otp_create
+      description: Verify OTP and get access tokens
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPVerificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - Bearer: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refresh:
+                    type: string
+                  access:
+                    type: string
+          description: OTP verified successfully
+        '400':
+          description: Invalid OTP
+components:
+  schemas:
+    ActivityPattern:
+      type: object
+      properties:
+        hourly_distribution:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: integer
+        weekly_distribution:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: integer
+      required:
+      - hourly_distribution
+      - weekly_distribution
+    GroupMetrics:
+      type: object
+      properties:
+        total_messages:
+          type: integer
+        active_users:
+          type: integer
+        media_count:
+          type: integer
+        messages_per_user:
+          type: number
+          format: double
+        daily_stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupStatistics'
+        top_users:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: integer
+      required:
+      - active_users
+      - daily_stats
+      - media_count
+      - messages_per_user
+      - top_users
+      - total_messages
+    GroupStatistics:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        total_messages:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        active_users:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        media_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        peak_hour:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+      required:
+      - date
+    OTPVerificationRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 17
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+        phone_id:
+          type: string
+          minLength: 1
+      required:
+      - otp
+      - phone_id
+      - phone_number
+    PhoneNumberAuthRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 17
+      required:
+      - phone_number
+    UserMetrics:
+      type: object
+      properties:
+        total_messages:
+          type: integer
+        media_messages:
+          type: integer
+        active_days:
+          type: integer
+        avg_message_length:
+          type: number
+          format: double
+        total_characters:
+          type: integer
+        avg_response_time_seconds:
+          type: number
+          format: double
+        messages_per_day:
+          type: number
+          format: double
+        engagement_trend:
+          type: string
+      required:
+      - active_days
+      - avg_message_length
+      - avg_response_time_seconds
+      - engagement_trend
+      - media_messages
+      - messages_per_day
+      - total_characters
+      - total_messages
+    UserMetricsRequest:
+      type: object
+      properties:
+        total_messages:
+          type: integer
+        media_messages:
+          type: integer
+        active_days:
+          type: integer
+        avg_message_length:
+          type: number
+          format: double
+        total_characters:
+          type: integer
+        avg_response_time_seconds:
+          type: number
+          format: double
+        messages_per_day:
+          type: number
+          format: double
+        engagement_trend:
+          type: string
+          minLength: 1
+      required:
+      - active_days
+      - avg_message_length
+      - avg_response_time_seconds
+      - engagement_trend
+      - media_messages
+      - messages_per_day
+      - total_characters
+      - total_messages
+    UserTrends:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        message_count:
+          type: integer
+        media_count:
+          type: integer
+        avg_length:
+          type: number
+          format: double
+      required:
+      - avg_length
+      - date
+      - media_count
+      - message_count
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: auth
+  description: Authentication endpoints
+- name: analytics
+  description: Analytics and statistics endpoints

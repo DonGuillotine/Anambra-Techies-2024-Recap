@@ -5,12 +5,25 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from .serializers import PhoneNumberAuthSerializer, OTPVerificationSerializer
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .services import StytchService
 
 User = get_user_model()
 
 class RequestOTPView(APIView):
     permission_classes = [AllowAny]
+    @extend_schema(
+        tags=['auth'],
+        request=PhoneNumberAuthSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="OTP sent successfully",
+                response={"type": "object", "properties": {"message": {"type": "string"}}}
+            ),
+            400: OpenApiResponse(description="Invalid phone number format")
+        },
+        description="Request an OTP for phone number authentication",
+    )
 
     def post(self, request):
         serializer = PhoneNumberAuthSerializer(data=request.data)
@@ -37,6 +50,24 @@ class RequestOTPView(APIView):
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
+    @extend_schema(
+        tags=['auth'],
+        request=OTPVerificationSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="OTP verified successfully",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "refresh": {"type": "string"},
+                        "access": {"type": "string"}
+                    }
+                }
+            ),
+            400: OpenApiResponse(description="Invalid OTP")
+        },
+        description="Verify OTP and get access tokens",
+    )
 
     def post(self, request):
         serializer = OTPVerificationSerializer(data=request.data)

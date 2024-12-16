@@ -16,6 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
 from rest_framework.routers import DefaultRouter
 from analytics.views import AnalyticsViewSet
 from authentication.views import RequestOTPView, VerifyOTPView
@@ -24,9 +29,13 @@ router = DefaultRouter()
 router.register(r'analytics', AnalyticsViewSet, basename='analytics')
 
 urlpatterns = [
+    path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'), 
     path('admin/', admin.site.urls),
     path('api/auth/request-otp/', RequestOTPView.as_view(), name='request-otp'),
     path('api/auth/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('api/', include(router.urls)),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui-alt'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
